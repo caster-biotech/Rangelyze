@@ -22,7 +22,7 @@ def load_and_preprocess(image_path: str) -> np.ndarray:
     hsv = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2HSV)
     h, s, v = cv2.split(hsv)
     
-    # Apply CLAHE only to channel V (Brillo)
+    # Apply CLAHE only to channel V 
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     v_clahe = clahe.apply(v)
     
