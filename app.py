@@ -14,7 +14,7 @@ def get_inference_engine() -> BloodCellDetector:
     """s
     Initializes the custom-trained YOLO model from local assets.
     """
-    return BloodCellDetector(model_path='assets/models/bccd_v1/weights/best.pt')
+    return BloodCellDetector(model_path='assets/models/best.pt')
 
 
 def main():
