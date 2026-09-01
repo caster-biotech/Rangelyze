@@ -1,0 +1,10 @@
+path: datasets/bccd_yolo #Root dataset directory
+train: images/train
+val: images/val
+
+#Clases
+nc: 3
+names:
+    0: RBC
+    1: WBC
+    2: Platelets

@@ -1,8 +1,11 @@
 import os
 import xml.etree.ElementTree as ET
 from typing import Tuple
+import shutil
+import random
+from pathlib import Path
 
-# 1. Sample estandarization 
+# 1.- Sample estandarization 
 
 def convert_voc_to_yolo_math(
     size: Tuple[int, int], 
@@ -44,7 +47,8 @@ def convert_voc_to_yolo_math(
         round(height_norm, 6)
     )
 
-# 2. BCCD class mapping to numerical YOLO IDs
+
+# 2.-  BCCD class mapping to numerical YOLO IDs
 
 
 #MVP Scope: Limited to 3 cell types. Fine-grained classification planned for future releases.
@@ -115,3 +119,93 @@ def parse_voc_xml_to_yolo(xml_file_path: str, output_txt_path: str) -> bool:
     except Exception as e:
         print(f"Error processing {xml_file_path}: {e}")
         return False
+
+# 3.- Principal Loop
+
+def split_and_prepare_dataset(
+    source_images_dir: str, 
+    source_annotations_dir: str, 
+    output_base_dir: str, 
+    val_split: float = 0.2
+):
+    """
+    Orchestrates the conversion process. Reads raw BCCD files, converts labels to YOLO format,
+    and splits the data into train and validation sets.
+    """
+    # 1. Define the exact folder structure YOLO requires
+    paths = {
+        "images_train": Path(output_base_dir) / "images" / "train",
+        "images_val": Path(output_base_dir) / "images" / "val",
+        "labels_train": Path(output_base_dir) / "labels" / "train",
+        "labels_val": Path(output_base_dir) / "labels" / "val"
+    }
+
+    # Create the directories if they don't exist
+    for p in paths.values():
+        p.mkdir(parents=True, exist_ok=True)
+
+    # 2. Get all available XML annotations
+    xml_files = [f for f in os.listdir(source_annotations_dir) if f.endswith('.xml')]
+    
+    # 3. Randomly shuffle to ensure unbiased splitting
+    random.seed(42) # Fixed seed for reproducible results
+    random.shuffle(xml_files)
+    
+    # Calculate how many files go to validation
+    num_val = int(len(xml_files) * val_split)
+    
+    # Slice the list into train and val sets
+    val_files = xml_files[:num_val]
+    train_files = xml_files[num_val:]
+    
+    print(f"Total samples: {len(xml_files)}")
+    print(f"Allocating {len(train_files)} to Training and {len(val_files)} to Validation.")
+
+    # 4. The main processing loop
+    def process_set(file_list: list, img_dest_dir: Path, lbl_dest_dir: Path):
+        successful_conversions = 0
+        for xml_file in file_list:
+            # Construct full paths
+            base_name = xml_file.replace('.xml', '')
+            source_xml_path = os.path.join(source_annotations_dir, xml_file)
+            source_img_path = os.path.join(source_images_dir, f"{base_name}.jpg")
+            
+            dest_txt_path = lbl_dest_dir / f"{base_name}.txt"
+            dest_img_path = img_dest_dir / f"{base_name}.jpg"
+            
+            # Check if the corresponding image exists before processing
+            if not os.path.exists(source_img_path):
+                print(f"Warning: Image missing for {xml_file}. Skipping.")
+                continue
+                
+            # Process the XML. If successful, copy the image to the new YOLO structure
+            if parse_voc_xml_to_yolo(source_xml_path, str(dest_txt_path)):
+                shutil.copy2(source_img_path, dest_img_path)
+                successful_conversions += 1
+                
+        return successful_conversions
+
+    print("\nProcessing Training Set...")
+    train_count = process_set(train_files, paths["images_train"], paths["labels_train"])
+    
+    print("Processing Validation Set...")
+    val_count = process_set(val_files, paths["images_val"], paths["labels_val"])
+    
+    print(f"\nPreparation Complete! Successfully prepared {train_count} train samples and {val_count} val samples.")
+
+#  ==== EXECUTION BLOCK =====   
+
+# Execute the script ONLY if run directly from the terminal
+if __name__ == "__main__":
+    # Relative paths pointing to the folder extracted by setup_offline.py
+    RAW_IMAGES = "datasets/bccd_sample/BCCD_Dataset-master/BCCD/JPEGImages"
+    RAW_ANNOTATIONS = "datasets/bccd_sample/BCCD_Dataset-master/BCCD/Annotations"
+    OUTPUT_YOLO = "datasets/bccd_yolo"
+
+    print("Starting BCCD to YOLO dataset conversion pipeline...")
+    split_and_prepare_dataset(
+        source_images_dir=RAW_IMAGES,
+        source_annotations_dir=RAW_ANNOTATIONS,
+        output_base_dir=OUTPUT_YOLO,
+        val_split=0.2
+    )
