@@ -22,3 +22,7 @@ __pycache__/
 .vscode/
 .idea/
 .DS_Store
+
+# Excluir entrenamientos y pesos de YOLO
+runs/
+*.pt

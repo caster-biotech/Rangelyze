@@ -8,14 +8,14 @@ from src.predictor import BloodCellDetector
 
 # 1. THE CACHE DECORATOR (Crucial for performance)
 # @st.cache_resource is used for global resources like ML models or Database connections
+
 @st.cache_resource
 def get_inference_engine() -> BloodCellDetector:
+    """s
+    Initializes the custom-trained YOLO model from local assets.
     """
-    Initializes the YOLO model only once per session.
-    Prevents memory leaks and slow re-renders.
-    """
-    # For MVP, using the base YOLOv8 nano model
-    return BloodCellDetector(model_path='yolov8n.pt')
+    return BloodCellDetector(model_path='assets/models/bccd_v1/weights/best.pt')
+
 
 def main():
     st.set_page_config(

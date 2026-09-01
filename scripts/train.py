@@ -24,7 +24,7 @@ def run_training():
         batch=16,              # Samples per batch (adjust lower if out of memory)
         workers=2,             # Data loader threads
         name='bccd_v1',         # Experiment name
-        project='assets/models', # Save destination for trained weights
+        project='./assets/models', # Save destination for trained weights
         exist_ok=True          # Overwrite existing experiment folder with same name
     )
     
