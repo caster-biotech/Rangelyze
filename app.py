@@ -5,6 +5,7 @@ import os
 # Import our custom modules (Clean Architecture approach)
 from src.preprocessing import load_and_preprocess
 from src.predictor import BloodCellDetector
+from src.analytics import CellAnalytics
 
 # 1. THE CACHE DECORATOR (Crucial for performance)
 # @st.cache_resource is used for global resources like ML models or Database connections
@@ -71,9 +72,23 @@ def main():
             st.subheader(f"2. YOLO Detections (Found: {len(metadata)})")
             st.image(annotated_image, use_container_width=True)
 
-        # 5. DISPLAY RAW METADATA (For the upcoming Layer 4)
-        st.markdown("### Detection Metadata (Raw JSON)")
-        st.write(metadata)
+        # 5. ANALYTIC. LAYER 4 INTEGRATION 
+        analytics = CellAnalytics(metadata)
+        counts = analytics.get_absolute_counts()
+
+        st.divider()
+        st.subheader("Analytic Results")
+
+        # Display absolute counts
+        metric_col1, metric_col2, metric_col3 = st.columns(3)
+        metric_col1.metric("Red Blood Cells (RBC)", counts.get("RBC", 0))
+        metric_col2.metric("White Blood Cells (WBC)", counts.get("WBC", 0))
+        metric_col3.metric("Platelets", counts.get("Platelets", 0))
+
+        # # Display statistical summary table
+        st.subheader("Prediction Confidence Metrics")
+        summary_df = analytics.get_summary_dataframe()
+        st.dataframe(summary_df, use_container_width=True, hide_index=True)
 
     except Exception as e:
         st.error(f"System Error: {str(e)}")
